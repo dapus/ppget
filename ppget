@@ -1,0 +1,103 @@
+#!/bin/sh
+
+APIURL="http://pirateplay.se/api/get_streams.js?url="
+TMP=/tmp/ppurl$$
+
+usage() {
+	echo "Usage: $1 <url> <filename> [<quality>]"
+	echo "       $1 -l <url>"
+	echo
+	echo "    -l          list available qualities"
+	echo "    <quality>   best (default), worst or one of the available (use -l to list)"
+	echo
+	exit 1
+}
+
+selquality() {
+	# XXX: I'm assuming  higher number is better quality
+	awk -v "quality=$1" '
+		quality == "best" {
+			SEL=$0;
+			exit;
+		}
+		quality == "worst" {
+			SEL=$0;
+		}
+		quality == $1 {
+			SEL=$0;
+			exit;
+		}
+		END {
+			print SEL;
+		}
+	'
+}
+
+download() {
+	local sel="$(selquality $1)"
+	local filename="$2"
+	if [ ! "$sel" ]; then
+		echo "Quality $1 is not available"
+		exit 1
+	fi
+
+	local qual=$(echo "$sel" | cut -f1)
+	local url=$(echo "$sel" | cut -f2)
+
+	echo "Selecting quality $qual"
+
+	# Turn off colors in ffmpeg
+	export AV_LOG_FORCE_NOCOLOR=1
+
+	ffmpeg -i -n "$url" -acodec copy -vcodec copy -absf aac_adtstoasc "$filename" 2>&1 | awk '
+	BEGIN {
+		RS="[\r\n]";
+	}
+	function strtosec(str,  a,sec) {
+		split(str, a, ":"); 
+		sec = a[3];
+		sec += a[2] * 60;
+		sec += a[1] * 60 * 60;
+
+		return sec;
+	}
+	/Duration: / {
+		sub(",", "", $2);
+		TOTAL = strtosec($2);
+	}
+	/time=[0-9][0-9]/ {
+		if(match($0, /time=[0-9:.]*/) != 0) {
+			printf("\r%.2f%%     ", strtosec(substr($0, RSTART+5, RLENGTH-5))/TOTAL*100);
+		}
+	}
+	END {
+		printf("\n");
+	}
+	'
+}
+
+if [ "$1" = "-l" ]; then
+	list=1
+	url="$2"
+elif [ $# -eq 2 ] || [ $# -eq 3 ]; then
+	url="$1"
+	filename="$2"
+	quality=${3:-best}
+else
+	usage $0
+fi
+
+curl -Ss "$APIURL$url" > $TMP || { rm $TMP; exit 1; }
+
+if [ "$list" ]; then
+	jshon -C -a -e meta -e quality -u < $TMP | sed 's/ kbps//' | sort -r -n
+	rm $TMP
+	exit
+fi
+
+echo Downloading to $filename
+test -f "$filename" && { echo File exists "$filename"; exit 1; }
+jshon -C -a -e meta -e quality -u -p -p -e url -u < $TMP | sed 's/ kbps//' | paste -s -d '\t\n' | sort -r -n | download $quality "$filename"
+
+rm $TMP
+
