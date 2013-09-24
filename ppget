@@ -15,6 +15,11 @@ usage() {
 	exit 1
 }
 
+cleanexit() {
+	rm -f $TMP
+	exit $1
+}
+
 selquality() {
 	# XXX: I'm assuming  higher number is better quality
 	awk -v "quality=$1" '
@@ -74,8 +79,7 @@ download_http() {
 
 download_rtmp() {
 	echo rtmp not yet supported
-	rm -f $TMP
-	exit 1
+	cleanexit 1
 }
 
 if [ "$1" = "-l" ]; then
@@ -89,16 +93,15 @@ else
 	usage $0
 fi
 
-curl -Ss "$APIURL$url" > $TMP || { rm $TMP; exit 1; }
+curl -Ss "$APIURL$url" > $TMP || cleanexit 1
 
 if [ "$list" ]; then
 	jshon -C -a -e meta -e quality -u < $TMP | sed 's/ kbps//' | sort -r -n
-	rm $TMP
-	exit
+	cleanexit
 fi
 
 echo Downloading to $filename
-test -f "$filename" && { echo File exists "$filename"; exit 1; }
+test -f "$filename" && { echo File exists "$filename"; cleanexit 1; }
 
 sel="$(jshon -C -a -e meta -e quality -u -p -p -e url -u < $TMP | \
 	sed 's/ kbps//' | paste -s -d '\t\n' | sort -r -n | \
@@ -106,7 +109,7 @@ sel="$(jshon -C -a -e meta -e quality -u -p -p -e url -u < $TMP | \
 
 if [ ! "$sel" ]; then
 	echo "Quality '$quality' is not available"
-	exit 1
+	cleanexit 1
 fi
 selqual=$(echo "$sel" | cut -f1)
 selurl=$(echo "$sel" | cut -f2)
@@ -123,12 +126,11 @@ case "$proto" in
 		;;
 	*)
 		echo Protocol not supported: $proto
-		rm -f $TMP
-		exit 1
+		cleanexit 1
 		;;
 esac
 
 download_$proto "$selurl" "$filename"
 
-rm $TMP
+cleanexit
 
