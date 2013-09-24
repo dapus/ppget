@@ -115,10 +115,10 @@ echo "Selecting quality $selqual"
 
 proto="$(echo "$selurl" | cut -d: -f1)"
 case "$proto" in
-	http*)
+	http | https)
 		proto=http
 		;;
-	rtmp*)
+	rtmp | rtmpt[se] | rtmp[tes])
 		proto=rtmp
 		;;
 	*)
