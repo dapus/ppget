@@ -82,8 +82,40 @@ download_http() {
 }
 
 download_rtmp() {
-	echo rtmp not yet supported
-	cleanexit 1
+	local url="$1"
+	local filename="$2"
+
+	echo $url
+
+	# extract real url and args to rtmpdump
+	local u=$(echo "$url" | cut '-d ' -f1)
+	local args=${url:${#u}}
+	args=$(echo $args | awk '
+		BEGIN {RS=" "; FS="=";}
+		{printf("--%s %s\n", $1, $2);}')
+
+	# Turn off colors in ffmpeg
+	export AV_LOG_FORCE_NOCOLOR=1
+
+	rtmpdump -o "$filename" -r "$u" $args 2>&1 | awk '
+	BEGIN {
+		RS="[\r\n]";
+	}
+	/^ERROR/{print; next;}
+	/\([0-9.]+%\)/ {
+		if(match($0, /\([0-9.]+%\)/) != 0) {
+			printf("\r%s     ", substr($0, RSTART+1, RLENGTH-2));
+		}
+	}
+	'
+
+	if [ $? -eq 0 ]; then
+		printf "\r100%%     "
+	else
+		echo
+		echo "rtmpdump failed"
+		cleanexit 1
+	fi
 }
 
 if [ "$1" = "-l" ]; then
