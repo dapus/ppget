@@ -92,9 +92,6 @@ download_rtmp() {
 		BEGIN {RS=" "; FS="=";}
 		{printf("--%s %s\n", $1, $2);}')
 
-	# Turn off colors in ffmpeg
-	export AV_LOG_FORCE_NOCOLOR=1
-
 	rtmpdump -o "$filename" -r "$u" $args 2>&1 | awk '
 	BEGIN {
 		RS="[\r\n]";
