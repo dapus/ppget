@@ -3,7 +3,6 @@
 set -o pipefail
 
 APIURL="http://pirateplay.se/api/get_streams.js?url="
-TMP=/tmp/ppurl$$
 
 usage() {
 	echo "Usage: $1 <url> <filename> [<quality>]"
@@ -15,9 +14,8 @@ usage() {
 	exit 1
 }
 
-cleanexit() {
-	rm -f $TMP
-	exit $1
+pirateplay() {
+	curl -Ss "$APIURL$1" || exit 1
 }
 
 selquality() {
@@ -75,7 +73,7 @@ download_http() {
 	else
 		echo
 		echo "ffmpeg failed"
-		cleanexit 1
+		exit 1
 	fi
 
 	echo
@@ -114,7 +112,7 @@ download_rtmp() {
 	else
 		echo
 		echo "rtmpdump failed"
-		cleanexit 1
+		exit 1
 	fi
 }
 
@@ -129,23 +127,22 @@ else
 	usage $0
 fi
 
-curl -Ss "$APIURL$url" > $TMP || cleanexit 1
-
 if [ "$list" ]; then
-	jshon -C -a -e meta -e quality -u < $TMP | sed 's/ kbps//' | sort -r -n
-	cleanexit
+	pirateplay "$url" | jshon -C -a -e meta -e quality -u | sed 's/ kbps//' | sort -r -n
+	exit
 fi
 
 echo Downloading to $filename
-test -f "$filename" && { echo File exists "$filename"; cleanexit 1; }
+test -f "$filename" && { echo File exists "$filename"; exit 1; }
 
-sel="$(jshon -C -a -e meta -e quality -u -p -p -e url -u < $TMP | \
+sel="$(pirateplay "$url" | \
+	jshon -C -a -e meta -e quality -u -p -p -e url -u | \
 	sed 's/ kbps//' | paste -s -d '\t\n' | sort -r -n | \
 	selquality $quality)"
 
 if [ ! "$sel" ]; then
 	echo "Quality '$quality' is not available"
-	cleanexit 1
+	exit 1
 fi
 selqual=$(echo "$sel" | cut -f1)
 selurl=$(echo "$sel" | cut -f2)
@@ -162,11 +159,11 @@ case "$proto" in
 		;;
 	*)
 		echo Protocol not supported: $proto
-		cleanexit 1
+		exit 1
 		;;
 esac
 
 download_$proto "$selurl" "$filename"
 
-cleanexit
+exit
 
