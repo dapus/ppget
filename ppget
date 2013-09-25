@@ -72,6 +72,10 @@ download_http() {
 
 	if [ $? -eq 0 ]; then
 		printf "\r100%%     "
+	else
+		echo
+		echo "ffmpeg failed"
+		cleanexit 1
 	fi
 
 	echo
