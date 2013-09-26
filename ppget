@@ -121,7 +121,7 @@ elif [ $# -eq 2 ] || [ $# -eq 3 ]; then
 	filename="$2"
 	quality=${3:-best}
 else
-	usage $0
+	usage $(basename $0)
 fi
 
 if [ "$list" ]; then
