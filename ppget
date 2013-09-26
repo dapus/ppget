@@ -125,7 +125,9 @@ else
 fi
 
 if [ "$list" ]; then
-	pirateplay "$url" | jshon -C -a -e meta -e quality -u | sed 's/ kbps//' | sort -r -n
+	pirateplay "$url" | jshon -C -a -e meta -e quality -u -p -e suffixHint -u | \
+		sed -e 's/null/-/' -e 's/ kbps//' | paste -s -d '\t\n' | \
+		sort -r -n | column -t
 	exit
 fi
 
