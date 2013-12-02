@@ -38,6 +38,19 @@ selquality() {
 	'
 }
 
+getsub() {
+	local suburl="$1"
+	local filename="$2"
+
+	echo Saveing subtitles to $filename
+	curl -Ss -o "$filename" "$suburl"
+
+	# if it's wsrt, convert some stuff
+	if [ "${suburl: -4}" = "wsrt" ]; then
+		sed -i -r -e 's/<([/]?)3[23]>/<\1i>/g' -e 's/<[/]?[0-9]+>//g' "$filename"
+	fi
+}
+
 download_http() {
 	local url="$1"
 	local filename="$2"
@@ -135,8 +148,8 @@ echo Downloading to $filename
 test -f "$filename" && { echo File exists "$filename"; exit 1; }
 
 sel="$(pirateplay "$url" | \
-	jshon -C -a -e meta -e quality -u -p -p -e url -u | \
-	sed 's/ kbps//' | paste -s -d '\t\n' | sort -r -n | \
+	jshon -C -a -e meta -e quality -u -p -p -e url -u -p -e meta -e subtitles -u | \
+	sed 's/ kbps//' | paste -s -d '\t\t\n' | sort -r -n | \
 	selquality $quality)"
 
 if [ ! "$sel" ]; then
@@ -145,6 +158,7 @@ if [ ! "$sel" ]; then
 fi
 selqual=$(echo "$sel" | cut -f1)
 selurl=$(echo "$sel" | cut -f2)
+selsub=$(echo "$sel" | cut -f3)
 
 echo "Selecting quality $selqual"
 
@@ -161,6 +175,12 @@ case "$proto" in
 		exit 1
 		;;
 esac
+
+# we assume it's in srt format (but do some conversions in getsub).
+if [ ! "$selsub" = "null" ]; then
+	subfilename=$(echo "$filename" | sed 's/\.[^.]\+$/.srt/')
+	getsub "$selsub" "$subfilename"
+fi
 
 download_$proto "$selurl" "$filename"
 
