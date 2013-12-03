@@ -70,14 +70,15 @@ download_http() {
 
 		return sec;
 	}
-	/Duration: / {
-		sub(",", "", $2);
-		TOTAL = strtosec($2);
-	}
 	/time=[0-9][0-9]/ {
 		if(match($0, /time=[0-9:.]*/) != 0) {
 			printf("\r%.2f%%     ", strtosec(substr($0, RSTART+5, RLENGTH-5))/TOTAL*100);
 		}
+		next;
+	}
+	/Duration: / {
+		sub(",", "", $2);
+		TOTAL = strtosec($2);
 	}
 	'
 
