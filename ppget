@@ -14,6 +14,22 @@ usage() {
 	exit 1
 }
 
+yesno() {
+	local a=""
+
+	stty raw
+	echo -n "$1 (Y/n) "
+	read -n 1 a
+	stty -raw
+	echo
+
+	if [ "$a" = y ] || [ "$a" = Y ] || [ "$a" = "$(printf '\n')" ]; then
+		return 0
+	fi
+
+	return 1
+}
+
 pirateplay() {
 	curl -Ss "$APIURL$1" || exit 1
 }
@@ -146,7 +162,7 @@ if [ "$list" ]; then
 fi
 
 echo Downloading to $filename
-test -f "$filename" && { echo File exists "$filename"; exit 1; }
+test -f "$filename" && { yesno "$filename exist. Overwrite it?" || exit 1; }
 
 sel="$(pirateplay "$url" | \
 	jshon -C -a -e meta -e quality -u -p -p -e url -u -p -e meta -e subtitles -u | \
