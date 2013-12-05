@@ -58,7 +58,7 @@ getsub() {
 	local suburl="$1"
 	local filename="$2"
 
-	echo Saveing subtitles to $filename
+	echo Saving subtitles to $filename
 	curl -Ss -o "$filename" "$suburl"
 
 	# if it's wsrt, convert some stuff
@@ -74,7 +74,7 @@ download_http() {
 	# Turn off colors in ffmpeg
 	export AV_LOG_FORCE_NOCOLOR=1
 
-	ffmpeg -n -i "$url" -acodec copy -vcodec copy -absf aac_adtstoasc "$filename" 2>&1 | awk '
+	ffmpeg -i "$url" -acodec copy -vcodec copy -absf aac_adtstoasc "$filename" 2>&1 | awk '
 	BEGIN {
 		RS="[\r\n]";
 	}
@@ -195,7 +195,8 @@ esac
 
 # we assume it's in srt format (but do some conversions in getsub).
 if [ ! "$selsub" = "null" ]; then
-	subfilename=$(echo "$filename" | sed 's/\.[^.]\+$/.srt/')
+	subfilename="$(echo "$filename" | sed 's/\.[^.]\+$//').srt"
+	test -f "$subfilename" && { yesno "$subfilename exist. Overwrite it?" || exit 1; }
 	getsub "$selsub" "$subfilename"
 fi
 
