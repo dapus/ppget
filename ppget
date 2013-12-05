@@ -74,7 +74,7 @@ download_http() {
 	# Turn off colors in ffmpeg
 	export AV_LOG_FORCE_NOCOLOR=1
 
-	ffmpeg -y -i "$url" -acodec copy -vcodec copy -absf aac_adtstoasc "$filename" 2>&1 | awk '
+	ffmpeg -y -stdin -i "$url" -acodec copy -vcodec copy -absf aac_adtstoasc "$filename" 2>&1 | awk '
 	BEGIN {
 		RS="[\r\n]";
 	}
