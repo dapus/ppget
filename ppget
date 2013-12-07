@@ -63,7 +63,7 @@ getsub() {
 
 	# if it's wsrt, convert some stuff
 	if [ "${suburl: -4}" = "wsrt" ]; then
-		sed -i -r -e 's/<([/]?)3[23]>/<\1i>/g' -e 's/<[/]?[0-9]+>//g' "$filename"
+		sed -i -r -e 's/<([/]?)3[23]>/<\1i>/g' -e 's/<([/]?)36>/<\1b>/g' -e 's/<[/]?[0-9]+>//g' "$filename"
 	fi
 }
 
