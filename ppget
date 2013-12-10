@@ -14,13 +14,18 @@ usage() {
 	exit 1
 }
 
+isatty() {
+	# Test if we're on a tty
+	tty 2>&1 >/dev/null
+}
+
 yesno() {
 	local a=""
 
-	stty raw
+	isatty && stty raw
 	echo -n "$1 (Y/n) "
 	read -n 1 a
-	stty -raw
+	isatty && stty -raw
 	echo
 
 	if [ "$a" = y ] || [ "$a" = Y ] || [ "$a" = "$(printf '\n')" ]; then
