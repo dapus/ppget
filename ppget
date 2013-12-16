@@ -40,7 +40,7 @@ pirateplay() {
 }
 
 selquality() {
-	# XXX: I'm assuming  higher number is better quality
+	# XXX: I'm assuming higher number is better quality
 	awk -v "quality=$1" '
 		quality == "best" {
 			SEL=$0;
@@ -84,7 +84,7 @@ download_http() {
 		RS="[\r\n]";
 	}
 	function strtosec(str,  a,sec) {
-		split(str, a, ":"); 
+		split(str, a, ":");
 		sec = a[3];
 		sec += a[2] * 60;
 		sec += a[1] * 60 * 60;
