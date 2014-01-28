@@ -39,26 +39,10 @@ pirateplay() {
 	curl -Ss "$APIURL$1" || exit 1
 }
 
-# implementing my own which because I can't get
-# the regular one to not print error messages
-which() {
-	IFS=$':'
-	exists=$(for p in $PATH; do
-		if [ -x "$p/$1" ]; then
-			echo yes
-			break
-		fi
-	done)
-	unset IFS
-
-	test "$exists" && return 0
-	return 1
-}
-
 checkcommands() {
 	needed=$(
 	for p in $@; do
-		which $p || echo $p
+		which >/dev/null 2>/dev/null $p || echo $p
 	done)
 
 	if [ "$needed" ]; then
