@@ -46,8 +46,8 @@ checkcommands() {
 	done)
 
 	if [ "$needed" ]; then
-		echo "The following commands are missing from your \$PATH:"
-		echo $needed | tr ' ' '\n'
+		echo "The following commands are missing from your \$PATH:" 1>&2
+		echo $needed | tr ' ' '\n' 1>&2
 		return 1
 	fi
 
@@ -78,7 +78,6 @@ getsub() {
 	local suburl="$1"
 	local filename="$2"
 
-	echo Saving subtitles to $filename
 	curl -Ss -o "$filename" "$suburl"
 
 	# if it's wsrt, convert some stuff
@@ -118,11 +117,12 @@ download_http() {
 	}
 	'
 
-	if [ $? -eq 0 ]; then
+	local ret=$?
+	if [ $ret -eq 0 ]; then
 		printf "\r100%%     "
 	else
 		echo
-		echo "ffmpeg failed"
+		echo "Error: ffmpeg returned $ret" 1>&2
 		exit 1
 	fi
 
@@ -154,11 +154,12 @@ download_rtmp() {
 	}
 	'
 
-	if [ $? -eq 0 ]; then
+	local ret=$?
+	if [ $ret -eq 0 ]; then
 		printf "\r100%%     "
 	else
 		echo
-		echo "rtmpdump failed"
+		echo "Error: rtmpdump returned $ret" 1>&2
 		exit 1
 	fi
 }
@@ -183,7 +184,6 @@ if [ "$list" ]; then
 	exit
 fi
 
-echo Downloading to $filename
 test -f "$filename" && { yesno "$filename exist. Overwrite it?" || exit 1; }
 
 sel="$(pirateplay "$url" | \
@@ -192,14 +192,14 @@ sel="$(pirateplay "$url" | \
 	selquality $quality)"
 
 if [ ! "$sel" ]; then
-	echo "Quality '$quality' is not available"
+	echo "Quality '$quality' is not available" 1>&2
 	exit 1
 fi
 selqual=$(echo "$sel" | cut -f1)
 selurl=$(echo "$sel" | cut -f2)
 selsub=$(echo "$sel" | cut -f3)
 
-echo "Selecting quality $selqual"
+echo "Quality: $selqual"
 
 proto="$(echo "$selurl" | cut -d: -f1)"
 case "$proto" in
@@ -210,7 +210,7 @@ case "$proto" in
 		proto=rtmp
 		;;
 	*)
-		echo Protocol not supported: $proto
+		echo Protocol not supported: $proto 2>&1
 		exit 1
 		;;
 esac
@@ -218,6 +218,7 @@ esac
 # we assume it's in srt format (but do some conversions in getsub).
 if [ ! "$selsub" = "null" ]; then
 	subfilename="$(echo "$filename" | sed 's/\.[^.]\+$//').srt"
+	echo "Subtitles: $subfilename"
 	test -f "$subfilename" && { yesno "$subfilename exist. Overwrite it?" || exit 1; }
 	getsub "$selsub" "$subfilename"
 fi
