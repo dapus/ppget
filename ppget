@@ -4,6 +4,10 @@ set -o pipefail
 
 APIURL="http://pirateplay.se/api/get_streams.js?url="
 
+err() {
+	echo $@ 1>&2
+}
+
 usage() {
 	echo "Usage: $1 [-s] <url> <filename> [<quality>]"
 	echo "       $1 -l <url>"
@@ -47,7 +51,7 @@ checkcommands() {
 	done)
 
 	if [ "$needed" ]; then
-		echo "The following commands are missing from your \$PATH:" 1>&2
+		err "The following commands are missing from your \$PATH:"
 		echo $needed | tr ' ' '\n' 1>&2
 		return 1
 	fi
@@ -123,7 +127,7 @@ download_http() {
 		printf "\r100%%     "
 	else
 		echo
-		echo "Error: ffmpeg returned $ret" 1>&2
+		err "Error: ffmpeg returned $ret"
 		exit 1
 	fi
 
@@ -160,7 +164,7 @@ download_rtmp() {
 		printf "\r100%%     "
 	else
 		echo
-		echo "Error: rtmpdump returned $ret" 1>&2
+		err "Error: rtmpdump returned $ret"
 		exit 1
 	fi
 }
@@ -186,7 +190,7 @@ while true; do
 		usage $(basename $0)
 		;;
 	-*)
-		echo "Unknown option '$1'"
+		err "Unknown option '$1'"
 		usage $(basename $0)
 		;;
 	*)
@@ -225,7 +229,7 @@ sel="$(pirateplay "$url" | \
 	selquality $quality)"
 
 if [ ! "$sel" ]; then
-	echo "Quality '$quality' is not available" 1>&2
+	err "Quality '$quality' is not available"
 	exit 1
 fi
 selqual=$(echo "$sel" | cut -f1)
@@ -243,7 +247,7 @@ case "$proto" in
 		proto=rtmp
 		;;
 	*)
-		echo Protocol not supported: $proto 1>&2
+		err Protocol not supported: $proto
 		exit 1
 		;;
 esac
