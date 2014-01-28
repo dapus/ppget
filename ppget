@@ -210,7 +210,7 @@ case "$proto" in
 		proto=rtmp
 		;;
 	*)
-		echo Protocol not supported: $proto 2>&1
+		echo Protocol not supported: $proto 1>&2
 		exit 1
 		;;
 esac
