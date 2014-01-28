@@ -5,11 +5,12 @@ set -o pipefail
 APIURL="http://pirateplay.se/api/get_streams.js?url="
 
 usage() {
-	echo "Usage: $1 <url> <filename> [<quality>]"
+	echo "Usage: $1 -s <url> <filename> [<quality>]"
 	echo "       $1 -l <url>"
 	echo
 	echo "    -l          list available qualities"
 	echo "    <quality>   best (default), worst or one of the available (use -l to list)"
+	echo "    -s          Do not try to download subtitles"
 	echo
 	exit 1
 }
@@ -164,10 +165,42 @@ download_rtmp() {
 	fi
 }
 
-if [ "$1" = "-l" ]; then
-	list=1
-	url="$2"
-elif [ $# -eq 2 ] || [ $# -eq 3 ]; then
+list=0
+url=
+filename=
+quality=
+subtitles=1
+
+while true; do
+	case $1 in
+	-s)
+		subtitles=0
+		;;
+	-l)
+		list=1
+		shift
+		test \! "$1" && usage $(basename $0)
+		url=$1
+		;;
+	-h)
+		usage $(basename $0)
+		;;
+	-*)
+		echo "Unknown option '$1'"
+		usage $(basename $0)
+		;;
+	*)
+		break
+		;;
+	esac
+
+	shift
+done
+
+if [ $list -eq 1 ]; then
+	# NO-OP
+	true
+elif [ $list -eq 0 ] && [ $# -eq 2 ] || [ $# -eq 3 ]; then
 	url="$1"
 	filename="$2"
 	quality=${3:-best}
@@ -177,7 +210,7 @@ fi
 
 checkcommands jshon curl ffmpeg rtmpdump || exit 1
 
-if [ "$list" ]; then
+if [ $list -eq 1 ]; then
 	pirateplay "$url" | jshon -C -a -e meta -e quality -u -p -e suffixHint -u | \
 		sed -e 's/null/-/' -e 's/ kbps//' | paste -s -d '\t\n' | \
 		sort -r -n | column -t
@@ -216,7 +249,7 @@ case "$proto" in
 esac
 
 # we assume it's in srt format (but do some conversions in getsub).
-if [ ! "$selsub" = "null" ]; then
+if [ $subtitles -eq 1 ] && [ ! "$selsub" = "null" ]; then
 	subfilename="$(echo "$filename" | sed 's/\.[^.]\+$//').srt"
 	echo "Subtitles: $subfilename"
 	test -f "$subfilename" && { yesno "$subfilename exist. Overwrite it?" || exit 1; }
