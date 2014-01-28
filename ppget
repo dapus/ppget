@@ -5,7 +5,7 @@ set -o pipefail
 APIURL="http://pirateplay.se/api/get_streams.js?url="
 
 usage() {
-	echo "Usage: $1 -s <url> <filename> [<quality>]"
+	echo "Usage: $1 [-s] <url> <filename> [<quality>]"
 	echo "       $1 -l <url>"
 	echo
 	echo "    -l          list available qualities"
